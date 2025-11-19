@@ -69,6 +69,14 @@ const logout = () => {
                                 > 
                                     Clientes
                                 </NavLink>
+
+                                <NavLink 
+                                    :href="route('procesos.index')" 
+                                    :active="route().current('procesos.*')" 
+                                    active-class="border-white text-orange-400 focus:border-white"
+                                    class="text-white hover:text-white text-xl" > 
+                                    Procesos
+                                </NavLink>
                             </div>
                         </div>
 
