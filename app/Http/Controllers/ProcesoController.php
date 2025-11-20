@@ -3,111 +3,86 @@
 namespace App\Http\Controllers;
 
 use App\Models\Proceso;
-use App\Models\Cliente; // Importar modelo Cliente
-use App\Models\User;    // Importar modelo User (para editores)
+use App\Models\Cliente;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Storage; // Importar Storage para manejar archivos
+use Illuminate\Support\Facades\Storage;
 
 class ProcesoController extends Controller
 {
-    // Constante con los estados válidos para evitar errores tipográficos y facilitar cambios
     private const ESTADOS_VALIDOS = ['Pendiente', 'Finalizado', 'Entregado', 'En Revision'];
 
-    /**
-     * Muestra el listado de procesos.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Usamos 'with' para evitar el problema N+1 al cargar relaciones
-        $procesos = Proceso::with(['cliente', 'editor'])
-            ->orderBy('fecha_inicio', 'desc') // Ordenar por fecha más reciente
-            ->get();
+        $search = $request->input('search');
+        $estado = $request->input('estado');
+        $editor_id = $request->input('editor_id');
+        $perPage = $request->input('per_page', 10);
+        
+        $sortBy = $request->input('sort_by', 'fecha_final');
+        $sortDirection = $request->input('sort_direction', 'asc');
+
+        $procesos = Proceso::query()
+            ->with(['cliente:id,nombre', 'editor:id,name', 'documentos:id,proceso_id,ruta,nombre_original']) 
+            
+            ->when($search, function ($query, $search) {
+                $query->whereHas('cliente', function ($q) use ($search) {
+                    $q->where('nombre', 'like', "%{$search}%");
+                });
+            })
+            
+            ->when($estado, function ($query, $estado) {
+                $query->where('estado', $estado);
+            })
+            
+            ->when($editor_id, function ($query, $editor_id) {
+                $query->where('editor_id', $editor_id);
+            });
+
+        // Aplicar Ordenamiento Principal (Dinámico)
+        $procesos->orderBy($sortBy, $sortDirection);
+
+        // Aplicar Ordenamiento Secundario (Urgencia: fecha_final más cercana)
+        if ($sortBy !== 'fecha_final') {
+            $procesos->orderBy('fecha_final', 'asc');
+        }
+
+        $procesos = $procesos->paginate($perPage)->withQueryString();
+        
+        $usuarios = User::all(['id', 'name']);
+        $estados = self::ESTADOS_VALIDOS;
 
         return Inertia::render('Proceso/Index', [
-            'procesos' => $procesos
+            'procesos' => $procesos,
+            'filters' => [
+                'search' => $search,
+                'estado' => $estado,
+                'editor_id' => $editor_id,
+                'per_page' => $perPage,
+                'sort_by' => $sortBy,
+                'sort_direction' => $sortDirection,
+            ],
+            'usuarios' => $usuarios,
+            'estados' => $estados,
         ]);
     }
 
-    /**
-     * Muestra el formulario para crear un nuevo proceso.
-     */
     public function create()
     {
-        // Obtenemos listas simples para los selects del formulario
         $clientes = Cliente::all(['id', 'nombre']);
         $usuarios = User::all(['id', 'name']);
         
         return Inertia::render('Proceso/Create', [
             'clientes' => $clientes,
             'usuarios' => $usuarios,
-            'estados' => self::ESTADOS_VALIDOS, // Pasamos los estados al frontend
-        ]);
-    }
-
-    /**
-     * Almacena un nuevo proceso en la base de datos.
-     */
-    public function store(Request $request)
-    {
-        // 1. Validación
-        $validated = $request->validate([
-            'cliente_id' => ['required', 'exists:clientes,id'],
-            'tipo' => ['required', 'string', 'max:255'],
-            'descripcion' => ['required', 'string'],
-            'estado' => ['required', 'string', Rule::in(self::ESTADOS_VALIDOS)],
-            'fecha_inicio' => ['required', 'date'],
-            'fecha_final' => ['nullable', 'date', 'after_or_equal:fecha_inicio'], // Fecha final debe ser posterior a inicio
-            'editor_id' => ['required', 'exists:users,id'],
-            // Validación de archivo: opcional, tipos pdf/doc/docx, máx 10MB (10240 KB)
-            'archivo' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'], 
-        ]);
-
-        $filePath = null;
-
-        // 2. Manejo de subida de archivo
-        if ($request->hasFile('archivo')) {
-            // Guarda en 'storage/app/public/procesos' y devuelve la ruta relativa
-            $filePath = $request->file('archivo')->store('procesos', 'public');
-        }
-
-        // 3. Creación del registro
-        Proceso::create([
-            'cliente_id' => $validated['cliente_id'],
-            'tipo' => $validated['tipo'],
-            'descripcion' => $validated['descripcion'],
-            'estado' => $validated['estado'],
-            'fecha_inicio' => $validated['fecha_inicio'],
-            'fecha_final' => $validated['fecha_final'],
-            'editor_id' => $validated['editor_id'],
-            'archivos' => $filePath, // Guardamos la ruta del archivo subido
-        ]);
-
-        // 4. Redirección
-        return redirect()->route('procesos.index')->with('success', 'Proceso creado exitosamente.');
-    }
-
-    public function edit(Proceso $proceso)
-    {
-        // Cargamos las listas necesarias para los selectores
-        $clientes = Cliente::all(['id', 'nombre']);
-        $usuarios = User::all(['id', 'name']);
-
-        return Inertia::render('Proceso/Edit', [
-            'proceso' => $proceso, // Pasamos el proceso a editar
-            'clientes' => $clientes,
-            'usuarios' => $usuarios,
             'estados' => self::ESTADOS_VALIDOS,
         ]);
     }
 
-    /**
-     * Actualiza el recurso especificado en la base de datos.
-     */
-    public function update(Request $request, Proceso $proceso)
+    public function store(Request $request)
     {
-        // Validación (similar al store, pero el archivo es opcional)
         $validated = $request->validate([
             'cliente_id' => ['required', 'exists:clientes,id'],
             'tipo' => ['required', 'string', 'max:255'],
@@ -116,21 +91,64 @@ class ProcesoController extends Controller
             'fecha_inicio' => ['required', 'date'],
             'fecha_final' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
             'editor_id' => ['required', 'exists:users,id'],
-            'archivo' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'], // Opcional al editar
+            
+            'archivos' => ['nullable', 'array', 'max:10'], 
+            'archivos.*' => ['file', 'mimes:pdf,doc,docx,zip', 'max:10240'], 
         ]);
 
-        // Manejo del archivo: Si suben uno nuevo, borramos el anterior
-        if ($request->hasFile('archivo')) {
-            // 1. Borrar archivo viejo si existe
-            if ($proceso->archivos) {
-                Storage::disk('public')->delete($proceso->archivos);
+        $proceso = Proceso::create([
+            'cliente_id' => $validated['cliente_id'],
+            'tipo' => $validated['tipo'],
+            'descripcion' => $validated['descripcion'],
+            'estado' => $validated['estado'],
+            'fecha_inicio' => $validated['fecha_inicio'],
+            'fecha_final' => $validated['fecha_final'],
+            'editor_id' => $validated['editor_id'],
+        ]);
+
+        if ($request->hasFile('archivos')) {
+            foreach ($request->file('archivos') as $file) {
+                $filePath = $file->store('procesos/documentos', 'public');
+                
+                $proceso->documentos()->create([ 
+                    'ruta' => $filePath,
+                    'nombre_original' => $file->getClientOriginalName(),
+                ]);
             }
-            // 2. Subir nuevo
-            $filePath = $request->file('archivo')->store('procesos', 'public');
-            $proceso->archivos = $filePath;
         }
 
-        // Actualización de datos
+        return redirect()->route('procesos.index')->with('success', 'Proceso creado exitosamente.');
+    }
+
+    public function edit(Proceso $proceso)
+    {
+        $proceso->load('documentos');
+
+        $clientes = Cliente::all(['id', 'nombre']);
+        $usuarios = User::all(['id', 'name']);
+
+        return Inertia::render('Proceso/Edit', [
+            'proceso' => $proceso, 
+            'clientes' => $clientes,
+            'usuarios' => $usuarios,
+            'estados' => self::ESTADOS_VALIDOS,
+        ]);
+    }
+
+    public function update(Request $request, Proceso $proceso)
+    {
+        $validated = $request->validate([
+            'cliente_id' => ['required', 'exists:clientes,id'],
+            'tipo' => ['required', 'string', 'max:255'],
+            'descripcion' => ['required', 'string'],
+            'estado' => ['required', 'string', Rule::in(self::ESTADOS_VALIDOS)],
+            'fecha_inicio' => ['required', 'date'],
+            'fecha_final' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+            'editor_id' => ['required', 'exists:users,id'],
+            'archivos' => ['nullable', 'array', 'max:10'],
+            'archivos.*' => ['file', 'mimes:pdf,doc,docx,zip', 'max:10240'], 
+        ]);
+
         $proceso->update([
             'cliente_id' => $validated['cliente_id'],
             'tipo' => $validated['tipo'],
@@ -139,20 +157,26 @@ class ProcesoController extends Controller
             'fecha_inicio' => $validated['fecha_inicio'],
             'fecha_final' => $validated['fecha_final'],
             'editor_id' => $validated['editor_id'],
-            // 'archivos' ya se actualizó arriba si era necesario
         ]);
+        
+        if ($request->hasFile('archivos')) {
+            foreach ($request->file('archivos') as $file) {
+                $filePath = $file->store('procesos/documentos', 'public');
+                $proceso->documentos()->create([ 
+                    'ruta' => $filePath,
+                    'nombre_original' => $file->getClientOriginalName(),
+                ]);
+            }
+        }
 
         return redirect()->route('procesos.index')->with('success', 'Proceso actualizado correctamente.');
     }
 
-    /**
-     * Elimina el recurso especificado.
-     */
     public function destroy(Proceso $proceso)
     {
-        // Borrar el archivo asociado si existe
-        if ($proceso->archivos) {
-            Storage::disk('public')->delete($proceso->archivos);
+        foreach ($proceso->documentos as $documento) {
+            Storage::disk('public')->delete($documento->ruta);
+            $documento->delete(); 
         }
 
         $proceso->delete();

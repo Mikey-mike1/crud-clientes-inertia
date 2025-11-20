@@ -8,12 +8,36 @@ use Inertia\Inertia;
 
 class ClienteController extends Controller
 {
-    // Muestra el listado de clientes
-    public function index()
+    // Muestra el listado de clientes, manejando búsqueda y ordenamiento desde el frontend (Inertia)
+    public function index(Request $request)
     {
-        $clientes = Cliente::orderBy('id', 'desc')->paginate(10);
+        // Obtener parámetros de la URL enviados por Inertia
+        $search = $request->input('search');
+        $sortBy = $request->input('sort_by', 'id'); // Valor predeterminado: 'id'
+        $sortDirection = $request->input('sort_direction', 'desc'); // Valor predeterminado: 'desc'
+
+        $clientes = Cliente::query()
+            // 1. Aplicar Búsqueda (Filtro)
+            ->when($search, function ($query, $search) {
+                // Buscar en DNI, nombre y correo
+                $query->where('dni', 'like', "%{$search}%")
+                      ->orWhere('nombre', 'like', "%{$search}%")
+                      ->orWhere('correo', 'like', "%{$search}%");
+            })
+            // 2. Aplicar Ordenamiento
+            ->orderBy($sortBy, $sortDirection)
+            // 3. Aplicar Paginación
+            ->paginate(10)
+            ->withQueryString(); // Asegura que los parámetros de búsqueda/ordenamiento persistan en los enlaces de paginación
+
         return Inertia::render('Clientes/Index', [
             'clientes' => $clientes,
+            // También enviamos los parámetros de filtro y ordenamiento de vuelta al frontend para que se muestren en los inputs
+            'filters' => [
+                'search' => $search,
+                'sort_by' => $sortBy,
+                'sort_direction' => $sortDirection,
+            ]
         ]);
     }
 

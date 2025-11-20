@@ -7,31 +7,29 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Ejecuta las migraciones.
      */
     public function up(): void
     {
+        // Usamos Schema::table para modificar la tabla existente si es necesario, 
+        // pero aquí definimos la estructura final sin 'archivos'.
         Schema::create('procesos', function (Blueprint $table) {
             $table->id();
 
-            // Relación con Cliente
+            // Clave foránea para el Cliente (cliente_id)
             $table->foreignId('cliente_id')->constrained('clientes')->onDelete('cascade');
             
-            // Campos de texto
             $table->string('tipo');
             $table->text('descripcion');
 
-            // Campo para subir archivos (PDF, DOCX) - Nullable por si no suben nada al inicio
-            $table->string('archivos')->nullable();
-
-            // Estado con valor por defecto
-            $table->string('estado')->default('Pendiente'); // Pendiente, Finalizado, Entregado, En Revision
-
-            // Fechas
-            $table->date('fecha_inicio');
-            $table->date('fecha_final')->nullable(); // Nullable porque puede no haber terminado
+            // Columna 'archivos' ELIMINADA. Ahora se utiliza la tabla 'documentos'.
             
-            // Relación con Usuario (Editor asignado)
+            $table->string('estado')->default('Pendiente'); 
+            
+            $table->date('fecha_inicio');
+            $table->date('fecha_final')->nullable(); 
+            
+            // Clave foránea para el Editor/Usuario asignado (editor_id)
             $table->foreignId('editor_id')->constrained('users'); 
             
             $table->timestamps();
@@ -39,7 +37,7 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Revierte las migraciones.
      */
     public function down(): void
     {
