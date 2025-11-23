@@ -8,6 +8,11 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import { usePage } from '@inertiajs/vue3';
+
+
+const page = usePage();
+const flash = page.props.flash;
 
 const props = defineProps({
     cambio: Object,
@@ -64,7 +69,13 @@ const updateCambio = () => {
 const cancel = () => router.get(route('procesos.cambios.index', props.proceso.id));
 </script>
 <template>
+  
+  
+
 <AppLayout :title="`Editar Cambio #${props.cambio.id}`">
+    <div v-if="flash?.success" class="bg-green-500 text-white p-2 rounded mb-4">
+        {{ flash.success }}
+    </div>
   <div class="py-12">
     <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
       <FormSection @submitted="updateCambio">

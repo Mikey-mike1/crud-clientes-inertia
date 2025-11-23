@@ -237,9 +237,16 @@ const deleteProceso = (id) => {
                                     </td>
                                     
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+
+                                        <Link :href="route('procesos.show', proceso.id)" class="text-indigo-600 hover:text-indigo-900 mr-3 font-bold">
+                                        Ver
+                                        </Link>
+
+
                                         <Link :href="route('procesos.edit', proceso.id)" class="text-indigo-600 hover:text-indigo-900 mr-3 font-bold">
                                             Editar
                                         </Link>
+
                                         <button @click="deleteProceso(proceso.id)" class="text-red-600 hover:text-red-900 focus:outline-none">
                                             Eliminar
                                         </button>

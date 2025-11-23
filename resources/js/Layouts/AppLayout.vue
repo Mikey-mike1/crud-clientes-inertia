@@ -64,29 +64,30 @@ const logout = () => {
                                     Clientes
                                 </NavLink>
 
-                                <NavLink 
-                                    :href="route('procesos.index')" 
-                                    :class="[
-                                        'block text-xl px-3 py-2 rounded font-bold', 
-                                        route().current('procesos.*') 
-                                            ? 'bg-[#EA580C] text-white'  
-                                            : 'text-white hover:text-white'
-                                    ]"
-                                > 
-                                    Procesos
-                                </NavLink>
+<NavLink 
+    :href="route('procesos.index')" 
+    :class="[
+        'block text-xl px-3 py-2 rounded font-bold', 
+        route().current('procesos.*') && !route().current('procesos.cambios.*')
+            ? 'bg-[#EA580C] text-white'  
+            : 'text-white hover:text-white'
+    ]"
+>
+    Procesos
+</NavLink>
 
-                                <NavLink 
-                                    :href="route('cambios.mostrarTodos')" 
-                                    :class="[
-                                        'block text-xl px-3 py-2 rounded font-bold', 
-                                        route().current('cambios.mostrarTodos') 
-                                            ? 'bg-[#EA580C] text-white'  
-                                            : 'text-white hover:text-white'
-                                    ]"
-                                > 
-                                    Cambios
-                                </NavLink>
+<NavLink 
+    :href="route('cambios.mostrarTodos')" 
+    :class="[
+        'block text-xl px-3 py-2 rounded font-bold', 
+        route().current('cambios.mostrarTodos') || route().current('procesos.cambios.*')
+            ? 'bg-[#EA580C] text-white'  
+            : 'text-white hover:text-white'
+    ]"
+> 
+    Cambios
+</NavLink>
+
                             </div>
                         </div>
 

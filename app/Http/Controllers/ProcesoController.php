@@ -183,4 +183,35 @@ class ProcesoController extends Controller
 
         return redirect()->route('procesos.index')->with('success', 'Proceso eliminado.');
     }
+
+    public function destroyDocumento(Proceso $proceso, $documentoId)
+{
+    $documento = $proceso->documentos()->findOrFail($documentoId);
+
+    // Borrar del storage
+    Storage::disk('public')->delete($documento->ruta);
+
+    // Borrar de la tabla
+    $documento->delete();
+
+    // Retornar con flash
+    return redirect()->back()->with('success', 'Documento del proceso eliminado correctamente.');
+}
+
+    public function show(Proceso $proceso)
+    {
+        $proceso->load([
+            'cliente', 
+            'editor',
+            'documentos',
+            'cambios.editor', 
+            'cambios.documentos'
+        ]);
+
+        return Inertia::render('Proceso/Show', [
+            'proceso' => $proceso,
+        ]);
+    }
+
+    
 }

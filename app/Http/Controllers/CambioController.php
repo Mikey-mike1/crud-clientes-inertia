@@ -170,6 +170,16 @@ public function destroyDocumento(Proceso $proceso, Cambio $cambio, $documentoId)
     return redirect()->back()->with('success', 'Documento eliminado.');
 }
 
+public function show(Proceso $proceso, Cambio $cambio)
+{
+    $cambio->load(['editor', 'documentos', 'proceso.cliente']);
+
+    return inertia('Cambios/Show', [
+        'cambio' => $cambio,
+    ]);
+}
+
+
 
 
 }
