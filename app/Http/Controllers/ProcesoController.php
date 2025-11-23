@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ProcesoController extends Controller
 {
-    private const ESTADOS_VALIDOS = ['Pendiente', 'Finalizado', 'Entregado', 'En Revision'];
+    private const ESTADOS_VALIDOS = ['Pendiente', 'Finalizado', 'Entregado', 'En Revision', 'En Ejecucion'];
 
     public function index(Request $request)
     {

@@ -119,7 +119,7 @@ const cancel = () => {
                                 v-model="form.tipo"
                                 type="text"
                                 class="mt-1 block w-full"
-                                placeholder="Ej. Legal, Administrativo..."
+                                placeholder="Ej. BO, I, ..."
                                 required
                             />
                             <InputError :message="form.errors.tipo" class="mt-2" />

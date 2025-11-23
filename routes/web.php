@@ -6,6 +6,7 @@ use Inertia\Inertia;
 // Importamos ambos controladores aquí
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ProcesoController; 
+use App\Http\Controllers\CambioController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,4 +41,24 @@ Route::middleware([
     // CRUD de Procesos (NUEVO)
     // Esto habilita las rutas: index, create, store, edit, update, destroy
     Route::resource('procesos', ProcesoController::class);
+
+    Route::get('/cambios', [CambioController::class, 'mostrarCambios'])
+    ->name('cambios.mostrarTodos');
+
+    
+// CRUD de Cambios (anidado a un Proceso)
+Route::prefix('procesos/{proceso}/cambios')->group(function () {
+    Route::get('', [CambioController::class, 'index'])->name('procesos.cambios.index');
+    Route::get('create', [CambioController::class, 'create'])->name('procesos.cambios.create');
+    Route::post('', [CambioController::class, 'store'])->name('procesos.cambios.store');
+    Route::get('{cambio}/edit', [CambioController::class, 'edit'])->name('procesos.cambios.edit');
+    Route::put('{cambio}', [CambioController::class, 'update'])->name('procesos.cambios.update');
+    Route::delete('{cambio}', [CambioController::class, 'destroy'])->name('procesos.cambios.destroy');
+
+    // Ruta para eliminar un documento específico de un cambio
+    Route::delete('{cambio}/documentos/{documento}', [CambioController::class, 'destroyDocumento'])
+        ->name('procesos.cambios.documentos.destroy');
+});
+
+
 });

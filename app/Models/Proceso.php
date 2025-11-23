@@ -51,4 +51,11 @@ class Proceso extends Model
     {
         return $this->hasMany(Documento::class);
     }
+
+    // Relación: Un proceso puede tener muchos Cambios (Uno a Muchos)
+    public function cambios()
+{
+    return $this->hasMany(Cambio::class);
+}
+
 }
