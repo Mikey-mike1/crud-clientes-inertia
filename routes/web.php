@@ -6,6 +6,8 @@ use Inertia\Inertia;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ProcesoController; 
 use App\Http\Controllers\CambioController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Middleware\Admin;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,6 +17,10 @@ use App\Http\Controllers\CambioController;
 
 Route::get('/', function () {
     return redirect()->route('login');
+});
+
+Route::match(['get','post'], '/register', function () {
+    return redirect('/login'); // o abort(403)
 });
 
 
@@ -46,6 +52,7 @@ Route::middleware([
     Route::get('/cambios', [CambioController::class, 'mostrarCambios'])
     ->name('cambios.mostrarTodos');
 
+Route::get('/calendario', [ProcesoController::class, 'calendario'])->name('procesos.calendario');
 
 
     
@@ -66,5 +73,8 @@ Route::prefix('procesos/{proceso}/cambios')->group(function () {
         ->name('procesos.cambios.documentos.destroy');
 });
 
+Route::middleware(['auth', Admin::class])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('users', AdminUserController::class)->except(['show']);
+});
 
 });

@@ -68,7 +68,7 @@ const logout = () => {
     :href="route('procesos.index')" 
     :class="[
         'block text-xl px-3 py-2 rounded font-bold', 
-        route().current('procesos.*') && !route().current('procesos.cambios.*')
+        route().current('procesos.*') && !route().current('procesos.cambios.*') && !route().current('procesos.calendario')
             ? 'bg-[#EA580C] text-white'  
             : 'text-white hover:text-white'
     ]"
@@ -87,6 +87,32 @@ const logout = () => {
 > 
     Cambios
 </NavLink>
+
+<NavLink 
+    :href="route('procesos.calendario')" 
+    :class="[
+        'block text-xl px-3 py-2 rounded font-bold', 
+        route().current('procesos.calendario') || route().current('procesos.cambios.*')
+            ? 'bg-[#EA580C] text-white'  
+            : 'text-white hover:text-white'
+    ]"
+> 
+    Calendario
+</NavLink>
+
+<NavLink 
+    v-if="$page.props.auth.user.role === 'administrador'"
+    :href="route('admin.users.index')" 
+ :class="[
+        'block text-xl px-3 py-2 rounded font-bold', 
+        route().current('admin.users.*')
+            ? 'bg-[#EA580C] text-white'  
+            : 'text-white hover:text-white'
+    ]"
+>
+    Usuarios
+</NavLink>
+
 
                             </div>
                         </div>
@@ -202,6 +228,9 @@ const logout = () => {
                         >
                             Cambios
                         </ResponsiveNavLink>
+
+
+    
                     </div>
 
                     <div class="pt-4 pb-1 border-t border-blue-900">

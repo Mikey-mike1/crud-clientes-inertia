@@ -213,5 +213,33 @@ class ProcesoController extends Controller
         ]);
     }
 
+public function calendario()
+{
+    if (request()->wantsJson()) {
+        // Traer procesos con relaciones necesarias, excepto documentos
+        $procesos = Proceso::with(['cliente:id,nombre', 'editor:id,name'])
+            ->select('id', 'cliente_id', 'editor_id', 'tipo', 'estado', 'fecha_inicio', 'fecha_final')
+            ->get()
+            ->map(function ($proceso) {
+                return [
+                    'id' => $proceso->id,
+                    'title' => $proceso->tipo,
+                    'start' => $proceso->fecha_inicio,
+                    'end' => $proceso->fecha_final,
+                    'estado' => $proceso->estado,
+                    'cliente' => $proceso->cliente,
+                    'editor' => $proceso->editor,
+                    'tipo' => $proceso->tipo,
+                ];
+            });
+
+        return response()->json($procesos);
+    }
+
+    return Inertia::render('CalendarioProcesos');
+}
+
+
+
     
 }
