@@ -118,8 +118,6 @@ class ProcesoController extends Controller
             }
         }
 
-$this->notificarClienteCreacion($proceso, 'HXaae316044970e0e747d702e0dd313ff3');
-
         return redirect()->route('procesos.index')->with('success', 'Proceso creado exitosamente.');
     }
 
@@ -244,34 +242,5 @@ $this->notificarClienteCreacion($proceso, 'HXaae316044970e0e747d702e0dd313ff3');
 
 
     //FUNCION PARA MANDAR MENSAJE WHATSAPP USANDO TWILIO
-private function notificarClienteCreacion(Proceso $proceso, $templateSid = null)
-{
-    $cliente = $proceso->cliente;
-
-    if (!$cliente || !$cliente->telefono) {
-        return;
-    }
-
-    $telefono = '+504' . preg_replace('/[^0-9]/', '', $cliente->telefono);
-
-    // Obtener el nombre del editor desde la tabla users
-    $editorNombre = optional($proceso->editor)->name ?? 'Sin editor';
-
-    $variables = [
-        "1" => $cliente->nombre,
-        "2" => $proceso->tipo,
-        "3" => $proceso->estado,
-        "4" => $proceso->descripcion,
-        "5" => $proceso->fecha_inicio,
-        "6" => $proceso->fecha_final,
-        "7" => $editorNombre,
-    ];
-
-    try {
-        $twilio = app(TwilioService::class);
-        $twilio->enviarTemplate($telefono, $variables, $templateSid);
-    } catch (\Exception $e) {
-        \Log::error("Error enviando WhatsApp al cliente: " . $e->getMessage());
-    }
-}}
+}
 
