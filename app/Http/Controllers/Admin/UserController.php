@@ -10,19 +10,36 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
-public function index(Request $request)
-{
-    $users = User::query()
-        ->orderBy($request->get('sort_by', 'name'), $request->get('sort_direction', 'asc'))
-        ->paginate($request->get('per_page', 10))
-        ->withQueryString();
+    public function index(Request $request)
+    {
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', 10);
+        $sortBy = $request->input('sort_by', 'name');
+        $sortDirection = $request->input('sort_direction', 'asc');
 
-    return Inertia::render('Admin/Users/Index', [
-        'users' => $users, // Esto debe ser un objeto paginado
-        'filters' => $request->only(['search', 'per_page', 'sort_by', 'sort_direction']),
-    ]);
-}
+        $users = User::query()
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', '%' . $search . '%')
+                      ->orWhere('email', 'like', '%' . $search . '%');
+            })
 
+            ->withCount([
+                'procesos as active_tasks_count' => function ($query) {
+
+                    $query->whereNotIn('estado', ['Finalizado', 'Entregado']);
+                }
+            ])
+            // 3. Aplica la ordenación
+            ->orderBy($sortBy, $sortDirection)
+            // 4. Pagina los resultados
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return Inertia::render('Admin/Users/Index', [
+            'users' => $users,
+            'filters' => $request->only(['search', 'per_page', 'sort_by', 'sort_direction']),
+        ]);
+    }
     public function create()
     {
         return Inertia::render('Admin/Users/Create');

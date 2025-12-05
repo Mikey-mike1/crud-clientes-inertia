@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
+use App\Services\TwilioService;
 
 class ProcesoController extends Controller
 {
@@ -20,23 +21,23 @@ class ProcesoController extends Controller
         $estado = $request->input('estado');
         $editor_id = $request->input('editor_id');
         $perPage = $request->input('per_page', 10);
-        
+
         $sortBy = $request->input('sort_by', 'fecha_final');
         $sortDirection = $request->input('sort_direction', 'asc');
 
         $procesos = Proceso::query()
-            ->with(['cliente:id,nombre', 'editor:id,name', 'documentos:id,proceso_id,ruta,nombre_original']) 
-            
+            ->with(['cliente:id,nombre', 'editor:id,name', 'documentos:id,proceso_id,ruta,nombre_original'])
+
             ->when($search, function ($query, $search) {
                 $query->whereHas('cliente', function ($q) use ($search) {
                     $q->where('nombre', 'like', "%{$search}%");
                 });
             })
-            
+
             ->when($estado, function ($query, $estado) {
                 $query->where('estado', $estado);
             })
-            
+
             ->when($editor_id, function ($query, $editor_id) {
                 $query->where('editor_id', $editor_id);
             });
@@ -50,7 +51,7 @@ class ProcesoController extends Controller
         }
 
         $procesos = $procesos->paginate($perPage)->withQueryString();
-        
+
         $usuarios = User::all(['id', 'name']);
         $estados = self::ESTADOS_VALIDOS;
 
@@ -73,7 +74,7 @@ class ProcesoController extends Controller
     {
         $clientes = Cliente::all(['id', 'nombre']);
         $usuarios = User::all(['id', 'name']);
-        
+
         return Inertia::render('Proceso/Create', [
             'clientes' => $clientes,
             'usuarios' => $usuarios,
@@ -91,9 +92,9 @@ class ProcesoController extends Controller
             'fecha_inicio' => ['required', 'date'],
             'fecha_final' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
             'editor_id' => ['required', 'exists:users,id'],
-            
-            'archivos' => ['nullable', 'array', 'max:10'], 
-            'archivos.*' => ['file', 'mimes:pdf,doc,docx,zip', 'max:10240'], 
+
+            'archivos' => ['nullable', 'array', 'max:10'],
+            'archivos.*' => ['file', 'mimes:pdf,doc,docx,zip', 'max:10240'],
         ]);
 
         $proceso = Proceso::create([
@@ -109,13 +110,15 @@ class ProcesoController extends Controller
         if ($request->hasFile('archivos')) {
             foreach ($request->file('archivos') as $file) {
                 $filePath = $file->store('procesos/documentos', 'public');
-                
-                $proceso->documentos()->create([ 
+
+                $proceso->documentos()->create([
                     'ruta' => $filePath,
                     'nombre_original' => $file->getClientOriginalName(),
                 ]);
             }
         }
+
+$this->notificarClienteCreacion($proceso, 'HXaae316044970e0e747d702e0dd313ff3');
 
         return redirect()->route('procesos.index')->with('success', 'Proceso creado exitosamente.');
     }
@@ -128,7 +131,7 @@ class ProcesoController extends Controller
         $usuarios = User::all(['id', 'name']);
 
         return Inertia::render('Proceso/Edit', [
-            'proceso' => $proceso, 
+            'proceso' => $proceso,
             'clientes' => $clientes,
             'usuarios' => $usuarios,
             'estados' => self::ESTADOS_VALIDOS,
@@ -146,7 +149,7 @@ class ProcesoController extends Controller
             'fecha_final' => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
             'editor_id' => ['required', 'exists:users,id'],
             'archivos' => ['nullable', 'array', 'max:10'],
-            'archivos.*' => ['file', 'mimes:pdf,doc,docx,zip', 'max:10240'], 
+            'archivos.*' => ['file', 'mimes:pdf,doc,docx,zip', 'max:10240'],
         ]);
 
         $proceso->update([
@@ -158,11 +161,11 @@ class ProcesoController extends Controller
             'fecha_final' => $validated['fecha_final'],
             'editor_id' => $validated['editor_id'],
         ]);
-        
+
         if ($request->hasFile('archivos')) {
             foreach ($request->file('archivos') as $file) {
                 $filePath = $file->store('procesos/documentos', 'public');
-                $proceso->documentos()->create([ 
+                $proceso->documentos()->create([
                     'ruta' => $filePath,
                     'nombre_original' => $file->getClientOriginalName(),
                 ]);
@@ -176,7 +179,7 @@ class ProcesoController extends Controller
     {
         foreach ($proceso->documentos as $documento) {
             Storage::disk('public')->delete($documento->ruta);
-            $documento->delete(); 
+            $documento->delete();
         }
 
         $proceso->delete();
@@ -185,26 +188,26 @@ class ProcesoController extends Controller
     }
 
     public function destroyDocumento(Proceso $proceso, $documentoId)
-{
-    $documento = $proceso->documentos()->findOrFail($documentoId);
+    {
+        $documento = $proceso->documentos()->findOrFail($documentoId);
 
-    // Borrar del storage
-    Storage::disk('public')->delete($documento->ruta);
+        // Borrar del storage
+        Storage::disk('public')->delete($documento->ruta);
 
-    // Borrar de la tabla
-    $documento->delete();
+        // Borrar de la tabla
+        $documento->delete();
 
-    // Retornar con flash
-    return redirect()->back()->with('success', 'Documento del proceso eliminado correctamente.');
-}
+        // Retornar con flash
+        return redirect()->back()->with('success', 'Documento del proceso eliminado correctamente.');
+    }
 
     public function show(Proceso $proceso)
     {
         $proceso->load([
-            'cliente', 
+            'cliente',
             'editor',
             'documentos',
-            'cambios.editor', 
+            'cambios.editor',
             'cambios.documentos'
         ]);
 
@@ -213,33 +216,62 @@ class ProcesoController extends Controller
         ]);
     }
 
-public function calendario()
-{
-    if (request()->wantsJson()) {
-        // Traer procesos con relaciones necesarias, excepto documentos
-        $procesos = Proceso::with(['cliente:id,nombre', 'editor:id,name'])
-            ->select('id', 'cliente_id', 'editor_id', 'tipo', 'estado', 'fecha_inicio', 'fecha_final')
-            ->get()
-            ->map(function ($proceso) {
-                return [
-                    'id' => $proceso->id,
-                    'title' => $proceso->tipo,
-                    'start' => $proceso->fecha_inicio,
-                    'end' => $proceso->fecha_final,
-                    'estado' => $proceso->estado,
-                    'cliente' => $proceso->cliente,
-                    'editor' => $proceso->editor,
-                    'tipo' => $proceso->tipo,
-                ];
-            });
+    public function calendario()
+    {
+        if (request()->wantsJson()) {
+            // Traer procesos con relaciones necesarias, excepto documentos
+            $procesos = Proceso::with(['cliente:id,nombre', 'editor:id,name'])
+                ->select('id', 'cliente_id', 'editor_id', 'tipo', 'estado', 'fecha_inicio', 'fecha_final')
+                ->get()
+                ->map(function ($proceso) {
+                    return [
+                        'id' => $proceso->id,
+                        'title' => $proceso->tipo,
+                        'start' => $proceso->fecha_inicio,
+                        'end' => $proceso->fecha_final,
+                        'estado' => $proceso->estado,
+                        'cliente' => $proceso->cliente,
+                        'editor' => $proceso->editor,
+                        'tipo' => $proceso->tipo,
+                    ];
+                });
 
-        return response()->json($procesos);
+            return response()->json($procesos);
+        }
+
+        return Inertia::render('CalendarioProcesos');
     }
 
-    return Inertia::render('CalendarioProcesos');
-}
 
+    //FUNCION PARA MANDAR MENSAJE WHATSAPP USANDO TWILIO
+private function notificarClienteCreacion(Proceso $proceso, $templateSid = null)
+{
+    $cliente = $proceso->cliente;
 
+    if (!$cliente || !$cliente->telefono) {
+        return;
+    }
 
-    
-}
+    $telefono = '+504' . preg_replace('/[^0-9]/', '', $cliente->telefono);
+
+    // Obtener el nombre del editor desde la tabla users
+    $editorNombre = optional($proceso->editor)->name ?? 'Sin editor';
+
+    $variables = [
+        "1" => $cliente->nombre,
+        "2" => $proceso->tipo,
+        "3" => $proceso->estado,
+        "4" => $proceso->descripcion,
+        "5" => $proceso->fecha_inicio,
+        "6" => $proceso->fecha_final,
+        "7" => $editorNombre,
+    ];
+
+    try {
+        $twilio = app(TwilioService::class);
+        $twilio->enviarTemplate($telefono, $variables, $templateSid);
+    } catch (\Exception $e) {
+        \Log::error("Error enviando WhatsApp al cliente: " . $e->getMessage());
+    }
+}}
+

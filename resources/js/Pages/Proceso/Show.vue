@@ -4,6 +4,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { router } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import { Link } from '@inertiajs/vue3';
+
 
 const props = defineProps({
     proceso: Object // incluye cliente, editor, documentos y cambios
@@ -23,6 +25,7 @@ const deleteProcesoConfirmed = () => router.delete(route('procesos.destroy', pro
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+
 
             <!-- Información del Proceso -->
             <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 space-y-4">
@@ -56,8 +59,21 @@ const deleteProcesoConfirmed = () => router.delete(route('procesos.destroy', pro
                 </div>
             </div>
 
+            
+
+
+
+
             <!-- Cambios del Proceso -->
             <div class="bg-white shadow-md rounded-lg p-6 border border-gray-200 space-y-4">
+                 <div class="mb-6 flex flex-wrap gap-1 items-center justify-between">
+                        <Link :href="route('procesos.cambios.index', proceso)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-150 ease-in-out shadow-md flex items-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            Ver Todos los Cambios del Proceso
+                        </Link>
+                </div>
                 <h3 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-2">Cambios del Proceso</h3>
                 <div v-if="proceso.cambios.length" class="space-y-3">
                     <div v-for="cambio in proceso.cambios" :key="cambio.id" class="border rounded-lg p-4 bg-gray-50 shadow-sm space-y-2">
@@ -79,6 +95,7 @@ const deleteProcesoConfirmed = () => router.delete(route('procesos.destroy', pro
                                 :title="doc.nombre_original">
                                 {{ doc.nombre_original }}
                             </a>
+
                         </div>
                         <p v-else class="text-gray-400 italic mt-1">No hay documentos.</p>
                     </div>

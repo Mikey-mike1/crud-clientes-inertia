@@ -92,7 +92,7 @@ const logout = () => {
     :href="route('procesos.calendario')" 
     :class="[
         'block text-xl px-3 py-2 rounded font-bold', 
-        route().current('procesos.calendario') || route().current('procesos.cambios.*')
+        route().current('procesos.calendario') 
             ? 'bg-[#EA580C] text-white'  
             : 'text-white hover:text-white'
     ]"
@@ -142,7 +142,7 @@ const logout = () => {
                                         </div>
 
                                         <DropdownLink :href="route('profile.show')">
-                                            Profile
+                                            Perfil
                                         </DropdownLink>
 
                                         <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">
@@ -153,7 +153,7 @@ const logout = () => {
 
                                         <form @submit.prevent="logout">
                                             <DropdownLink as="button" class="text-orange-600 hover:text-orange-800">
-                                                Log Out
+                                                Cerrar sesión
                                             </DropdownLink>
                                         </form>
                                     </template>
