@@ -193,41 +193,85 @@ const logout = () => {
                 <!-- MENÚ RESPONSIVO (Ajustado para fondo azul) -->
                 <div :class="{'block': showingNavigationDropdown, 'hidden': ! showingNavigationDropdown}" class="sm:hidden bg-blue-700">
                     <div class="pt-2 pb-3 space-y-1 font-bold">
-                        <ResponsiveNavLink 
-                            :href="route('dashboard')" 
-                            :active="route().current('dashboard')" 
-                            active-class="bg-blue-600 border-l-4 border-white text-orange-400"
-                            class="text-xl text-white hover:bg-blue-600 hover:text-white"
-                        >
-                            Dashboard
-                        </ResponsiveNavLink>
+                            <a
+                                :href="route('dashboard')"
+                                :class="[
+                                    'block w-full ps-3 pe-4 py-2 border-l-4 text-start text-base font-medium transition duration-150 ease-in-out',
+                                    route().current('dashboard')
+                                        ? 'bg-orange-400 border-white text-white'
+                                        : 'border-transparent text-white hover:text-white hover:bg-blue-600'
+                                ]"
+                            >
+                                Dashboard
+                            </a>
 
-                        <ResponsiveNavLink 
-                            :href="route('clientes.index')" 
-                            :active="route().current('clientes.*')" 
-                            active-class="bg-blue-600 border-l-4 border-white text-orange-400"
-                            class="text-xl text-white hover:bg-blue-600 hover:text-white"
-                        >
-                            Clientes
-                        </ResponsiveNavLink>
 
-                        <ResponsiveNavLink 
-                            :href="route('procesos.index')" 
-                            :active="route().current('procesos.*')" 
-                            active-class="bg-blue-600 border-l-4 border-white text-orange-400"
-                            class="text-xl text-white hover:bg-blue-600 hover:text-white"
-                        >
-                            Procesos
-                        </ResponsiveNavLink>
 
-                        <ResponsiveNavLink 
-                            :href="route('cambios.mostrarTodos')" 
-                            :active="route().current('cambios.mostrarTodos')" 
-                            active-class="bg-blue-600 border-l-4 border-white text-orange-400"
-                            class="text-xl text-white hover:bg-blue-600 hover:text-white"
-                        >
-                            Cambios
-                        </ResponsiveNavLink>
+                      <!-- Clientes -->
+<a
+    :href="route('clientes.index')"
+    :class="[
+        'block w-full ps-3 pe-4 py-2 border-l-4 text-start text-base font-medium transition duration-150 ease-in-out',
+        route().current('clientes.*')
+            ? 'bg-orange-400 border-white text-white'
+            : 'border-transparent text-white hover:text-white hover:bg-blue-600'
+    ]"
+>
+    Clientes
+</a>
+
+<!-- Procesos -->
+<a
+    :href="route('procesos.index')"
+    :class="[
+        'block w-full ps-3 pe-4 py-2 border-l-4 text-start text-base font-medium transition duration-150 ease-in-out',
+         route().current('procesos.*') && !route().current('procesos.cambios.*') && !route().current('procesos.calendario')
+            ? 'bg-orange-400 border-white text-white'
+            : 'border-transparent text-white hover:text-white hover:bg-blue-600'
+    ]"
+>
+    Procesos
+</a>
+
+<!-- Cambios -->
+<a
+    :href="route('cambios.mostrarTodos')"
+    :class="[
+        'block w-full ps-3 pe-4 py-2 border-l-4 text-start text-base font-medium transition duration-150 ease-in-out',
+        route().current('cambios.mostrarTodos')
+            ? 'bg-orange-400 border-white text-white'
+            : 'border-transparent text-white hover:text-white hover:bg-blue-600'
+    ]"
+>
+    Cambios
+</a>
+
+<!-- Calendario -->
+<a
+    :href="route('procesos.calendario')"
+    :class="[
+        'block w-full ps-3 pe-4 py-2 border-l-4 text-start text-base font-medium transition duration-150 ease-in-out',
+        route().current('procesos.calendario')
+            ? 'bg-orange-400 border-white text-white'
+            : 'text-white border-transparent hover:text-white'
+    ]"
+>
+    Calendario
+</a>
+
+<!-- Usuarios (solo para administradores) -->
+<a
+    v-if="$page.props.auth.user.role === 'administrador'"
+    :href="route('admin.users.index')"
+    :class="[
+        'block w-full ps-3 pe-4 py-2 border-l-4 text-start text-base font-medium transition duration-150 ease-in-out',
+        route().current('admin.users.*')
+            ? 'bg-orange-400 border-white text-white'
+            : 'text-white border-transparent hover:text-white'
+    ]"
+>
+    Usuarios
+</a>
 
 
     
@@ -251,7 +295,7 @@ const logout = () => {
 
                         <div class="mt-3 space-y-1">
                             <ResponsiveNavLink :href="route('profile.show')" :active="route().current('profile.show')" active-class="bg-blue-600 border-l-4 border-white text-white font-bold">
-                                Profile
+                                Perfil
                             </ResponsiveNavLink>
 
                             <ResponsiveNavLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')" :active="route().current('api-tokens.index')" active-class="bg-blue-600 border-l-4 border-white text-white font-bold">
@@ -260,7 +304,7 @@ const logout = () => {
 
                             <form method="POST" @submit.prevent="logout">
                                 <ResponsiveNavLink as="button" class="text-orange-300 hover:text-orange-100 font-bold">
-                                    Log Out
+                                    Cerrar sesión
                                 </ResponsiveNavLink>
                             </form>
                         </div>
