@@ -24,9 +24,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::match(['get','post'], '/register', function () {
+/*Route::match(['get','post'], '/register', function () {
     return redirect('/login'); // o abort(403)
-});
+});*/
 
 
 // Grupo único de rutas protegidas (autenticación requerida)
